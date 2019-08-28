@@ -19,9 +19,14 @@ node {
             usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sshCommand remote: remote, command: "cd kubernetes-service/ && " +
                 "docker login -u $USERNAME -p $PASSWORD && " +
-                "docker image push sidie88/currency-exchange:$BUILD_TAG"
+                "docker image push harrydimas/backend-svc:$BUILD_TAG"
             }
     }
+    stage('update image tag') {
+		sshCommand remote: remote, command: "sed \"s/IMAGE_TAG/harrydimas/backend-svc/g\" "+
+			"kubernetes-service/rnd-angular7/backend-service.yaml > " +
+			"kubernetes-service/rnd-angular7/backend-service.yaml"
+	}
     stage('Deploy') {
 		sshCommand remote: remote, command: "kubectl -apply -f "+
 			"kubernetes-service/rnd-angular7/backend-service.yaml"
