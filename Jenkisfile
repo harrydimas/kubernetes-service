@@ -1,0 +1,29 @@
+node {
+    def remote = [:]
+    remote.name = 'MasterKubernetes'
+    remote.host = '172.20.103.122'
+    remote.port = 2220
+    remote.user = 'dimas'
+    remote.password = '!qwerty7'
+    remote.allowAnyHosts = true
+    stage('Git clone') {
+        sshCommand remote: remote, command: "cd kubernetes-service/ && "+
+            "git pull origin master"
+    }
+    stage('Build image') {
+        sshCommand remote: remote, command: "cd kubernetes-service/ && " +
+        " ./build-maven.sh rnd-angular7 sidie88/backend-service:$BUILD_TAG"
+    }
+    stage('Push image') {
+        withCredentials([usernamePassword(credentialsId: 'sidie88-hub.docker.com', 
+            usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            sshCommand remote: remote, command: "cd kubernetes-service/ && " +
+                "docker login -u $USERNAME -p $PASSWORD && " +
+                "docker image push sidie88/currency-exchange:$BUILD_TAG"
+            }
+    }
+    stage('Deploy') {
+		sshCommand remote: remote, command: "kubectl -apply -f "+
+			"kubernetes-service/rnd-angular7/backend-service.yaml"
+	}
+}
